@@ -8,6 +8,7 @@ package main
 import (
 	"os/user"
 	"fmt"
+	"log"
 	"os"
 	"flag"
 	"sync"
@@ -18,9 +19,13 @@ import (
 
 var wg sync.WaitGroup
 var running = true
+var histogram = false
+var histfile *os.File
 var params []types.TaskParameters
 
 func main() {
+	var err error 
+	
 	// Check to ensure this is being run as root
 	u,_ := user.Current()
 	if u.Uid != "0" {
@@ -43,8 +48,20 @@ func main() {
 	var interval time.Duration
 	flag.DurationVar(&interval,"i", 1000*time.Microsecond, "base `interval` of task")
 
+	var histfilename string
+	flag.StringVar(&histfilename, "H", "", "dump a latency histogram to `file` after the run")
+
 	flag.Parse()
 	//TODO: check for valid ranges of flags
+
+	// Should we print out histogram data?
+	if histfilename != "" {
+		histogram = true
+		histfile, err = os.Create(histfilename)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
         wg.Add(int(numTasks))
 	nextInterval := interval

@@ -4,6 +4,7 @@ import (
 	"syscall"
 	"runtime"
 	"time"
+	"fmt"
 	"github.com/RedShamilton/cyclictest-go/types"
 )
 
@@ -23,6 +24,10 @@ func worker(param *types.TaskParameters, itrs uint) {
                 next := time.Now().Add(param.Interval)
                 latency := time.WaitUntil(next)
 		stats.Update(latency)
+        	
+		if histogram {
+                	fmt.Fprintf(histfile, "%v\t%v\n",i,latency.Nanoseconds())
+        	}
 	}
 
         running = false
