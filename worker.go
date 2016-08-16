@@ -2,6 +2,7 @@ package main
 
 import (
 	"syscall"
+	"runtime"
 	"time"
 	"github.com/RedShamilton/cyclictest-go/types"
 )
@@ -13,14 +14,14 @@ func worker(param *types.TaskParameters, itrs uint) {
 	p.X__sched_priority = param.Priority
 	//TODO: implement error checking on syscalls
 	syscall.SchedSetscheduler(0,syscall.SCHED_FIFO,&p)
+        runtime.LockOSThread()
 	stats := param.Stats
 	stats.Reset()
 
 	// Test Code
 	for i := uint(0); i < itrs && running; i++ {
                 next := time.Now().Add(param.Interval)
-		time.Sleep(param.Interval)
-		latency := time.Now().Sub(next)
+                latency := time.WaitUntil(next)
 		stats.Update(latency)
 	}
 
