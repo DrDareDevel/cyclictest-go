@@ -17,12 +17,14 @@ func worker(param *types.TaskParameters, itrs uint) {
 	stats.Reset()
 
 	// Test Code
-	var next time.Time = time.Now() + param.Interval
-	for i := 0; i <= itrs && running; {
-		time.Sleep(next)
-		latency := time.Now() - next
+	for i := uint(0); i < itrs && running; i++ {
+                next := time.Now().Add(param.Interval)
+		time.Sleep(param.Interval)
+		latency := time.Now().Sub(next)
 		stats.Update(latency)
-		next += param.Interval
 	}
+
+        running = false
+        wg.Done()
 }
 

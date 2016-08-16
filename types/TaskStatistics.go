@@ -18,7 +18,11 @@ type TaskStatistics struct {
 }
 
 func (ts *TaskStatistics) Avg() time.Duration {
-	return ts.cumulative / ts.Count
+    if ts.Count != 0 {
+	return ts.cumulative / time.Duration(ts.Count)
+      }
+
+      return 0
 }
 
 func (ts *TaskStatistics) Update(val time.Duration) {
@@ -30,15 +34,15 @@ func (ts *TaskStatistics) Update(val time.Duration) {
 }
 
 func (ts *TaskStatistics) Reset() {
-	ts.Min    = 0*time.Second
-	ts.Max    = time.Duration(math.MaxInt64)
+	ts.Max    = 0*time.Second
+	ts.Min    = time.Duration(math.MaxInt64)
 	ts.cumulative = 0*time.Second
 	ts.Act    = 0*time.Second
 	ts.Count  = 0
 }
 
 func (ts *TaskStatistics) FprintResults(w io.Writer) {
-	fmt.Fprintln(w, "Hello")
+  fmt.Fprintf(w, "count: %v min: %v max: %v avg: %v\n", ts.Count, ts.Min, ts.Max, ts.Avg())
 }
 
 func (ts *TaskStatistics) PrintResults() {

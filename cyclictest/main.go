@@ -10,12 +10,13 @@ import (
 	"fmt"
 	"os"
 	"flag"
+	"sync"
 	"syscall"
 	"time"
 	"github.com/RedShamilton/cyclictest-go/types"
 )
 
-
+var wg sync.WaitGroup
 var running = true
 var params []types.TaskParameters
 
@@ -24,19 +25,19 @@ func main() {
 	u,_ := user.Current()
 	if u.Uid != "0" {
 		fmt.Fprintln(os.Stderr, "cyclictest must be run as root")
-		os.Exit(-syscall.EPERM)
+		os.Exit(int(syscall.EPERM))
 	}
 
 	// Set flag parsing to printout usage and exit on error
 	//flag.CommandLine.Init("", flag.ExitOnError)
 
 	var numLoops uint
-	flag.UintVar(&numLoops, "l", 0, "number of `loops`")
-	flag.UintVar(&numLoops, "loops", 0, "")
+	flag.UintVar(&numLoops, "l", 1000, "number of `loops`")
+	flag.UintVar(&numLoops, "loops", 1000, "")
 
-	var priority uint
-	flag.UintVar(&priority, "p", 0, "priority for highest `priority` thread")
-	flag.UintVar(&priority, "priority", 0, "")
+	var priority int
+	flag.IntVar(&priority, "p", 0, "priority for highest `priority` thread")
+	flag.IntVar(&priority, "priority", 0, "")
 
 	var numTasks uint
 	flag.UintVar(&numTasks, "t", 1, "number of `tasks`")
@@ -53,20 +54,21 @@ func main() {
 	flag.Parse()
 	//TODO: check for valid ranges of flags
 
+        wg.Add(int(numTasks))
 	nextInterval := interval
 	nextPrio := priority
 	params = make([]types.TaskParameters, numTasks)
-	for i := 0; i < numTasks; i++ {
-		params[i].Init(i,nextInterval,nextPrio,new(types.TaskStatistics))
+	for i := uint(0); i < numTasks; i++ {
+		params[i].Init(i,nextInterval,int32(nextPrio),new(types.TaskStatistics))
 		nextPrio -= 1
 		nextInterval += distance
-		go worker(params[i], numLoops)
+		go worker(&params[i], numLoops)
 	}
 
-	for running {
-		for i := 0; i < numTasks; i++ {
-			params[i].stats.PrintResults()
+        wg.Wait()
+
+		for i := uint(0); i < numTasks; i++ {
+			params[i].Stats.PrintResults()
 			time.Sleep(10*time.Microsecond)
 		}
-	}
 }
